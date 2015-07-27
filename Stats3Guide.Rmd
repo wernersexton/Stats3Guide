@@ -1,0 +1,328 @@
+---
+title: "MGT 285 R Guide"
+author: "David Werner"
+date: "June 5, 2015"
+output: pdf_document
+---
+
+# Introduction: Part 1
+# Overview
+So, you have decided to take MGT-285 (Stats 3)? Congratulations, this promises to be one of the most useful and challenging classes you will take at the GSM. Using R to complete this class and any others at the GSM can be like adding another class on top of that. So why do it? 
+
+In Business School, you learn a variety of useful software packages (Minitab, SPSS, SAS) but many times, these will not be available by your employer and, once your student liscence is expired, these can cost thousands of dollars a year. R is free and open-source meaning you will always have access to it. As an added bonus, you will learn to program many of the things you take for granted using commercial software which makes switching between tools easier. 
+
+Still not convinced? Think of your future job. Does it use forecasting or math at all (if not, drop this class now!)? Employers are increasinly interested in finding candidates who are able to use R
+
+TODO: Add Citations and Quotes here. 
+
+# How to use this guide
+This was written as an accompanyment to the existing 285 guides produced by Professor Tsai. It will follow the same format as the class and will provide you with additional examples to help understand how to use R for your projects. 
+
+# Getting and Installing R
+R and all the packages used in this guide are available from the Comprehensive R Archive Network (CRAN). 
+To install, go to this address:
+
+http://cran.r-project.org/
+
+and follow the directions. If you run into issues, google is your best friend! 
+
+I also highly suggest downloading R-Studio avaialable here:
+
+http://www.rstudio.com/
+
+It provides a graphic interface to R and give nifty benefits like automatic code completion. This guide will assume you have it installed and it may be easy to get lost without it. 
+
+# Working with your Team
+This class is as much about teamwork as it is about statistics. That being said, it will be a huge advantage if all your team mates are using R and learning together. If not, don't worry - it is very possible to use this on your own work. However, you will need to repeat the work using minitab to contribute to your group. An advantage of this approach is that minitab and R can use different algorithms to do the same task leading to different answers and you can select the best of both worlds. 
+
+If all your team members are on board, you can make your life easier by using github to share code 
+
+https://github.com/ 
+
+You can host it all online for free and easily share your changes with group members. Automatic version control makes sure you won't lose anything valuable if someone changes it and this is easily integrated with Rstudio. 
+
+Consider writing your reports with RMarkdown which already built into Rstudio. Info available here:
+
+http://rmarkdown.rstudio.com/
+
+This allows you to create your reports and dynamically integrate your R code. Code changes = report changes - easy as that! This guide is produced entirely in RMarkdown and can provide a good sample of how to use it. 
+
+# Introduction: Part 2: 
+# Getting Started in R
+
+## The Environment
+
+## Data Types
+
+## Defining and Accessing Variables 
+There two ways to define a variable in R. The arrow operator and equals sign. 
+```{r}
+x <- 3  #Preferred
+3 -> x
+x = 3
+```
+
+
+# Chapter 1: Naive Models 
+First we need to enter our data. 
+
+```{r}
+year <- seq(from = 1981, to = 1990, by = 1)
+ur <- c(7.6, 9.7, 9.6, 7.5, 7.2, 7.0, 6.2, 5.5, 5.3, 5.5)
+unemp <- data.frame(year, ur)
+```
+
+Lets take a look:
+
+```{r}
+plot(unemp)
+```
+
+Not quite what we have in the book. A few small changes will make it match. 
+```{r}
+plot(unemp, type = 'l', axes = FALSE, xlab = "Year", ylab = "UR", ylim = c(5,10)) 
+# type = 'l' makes it a line plot
+# axes = FALSE lets us set our own axis later
+# xlab and ylab allow us to specify labels 
+# ylim sets the limits of the y-axis
+
+axis(side = 1, at = year)
+# sets the x-axis to our variable "year"
+
+axis(side = 2, at = c(5:10))
+# sets the y-axis to 5 through 10
+
+box()
+# draws a box around everything
+```
+
+Right now, R doesn't know this is time related data. Telling it to "lag 1" won't mean anything. There are a number of packages in R to handle time series data. The most popular are 
+
+-ts 
+-zoo
+-xts 
+
+Each has unique characteristcs and uses. We will start with "xts" and use others as required. 
+
+Now lets load the xts package and do some time series analysis!
+```{r, echo=FALSE, message = FALSE}
+library(zoo)
+library(xts)
+# This should install with R - if not, run
+# install.packages("xts") NOTE: This will also install zoo 
+unemp_ts <- zoo(unemp, order.by = unemp$year)
+```
+
+Now, R understands this is time series data. We can do all time series operations on this. 
+```{r}
+unemp_ts$lag_ur <- lag.xts(x = unemp_ts$ur, k = 1, na.pad = FALSE)
+print(unemp_ts)
+```
+
+Representing everything visually is essential to understanding what is happening in your analysis. 
+```{r}
+plot(y = unemp_ts$ur, x = unemp$year, main = "Time Series Plot of UR, Lag(UR)", 
+     ylab = "Data", xlab = "Year", ylim = c(5,10), type = 'b', lty = 1, axes = FALSE, pch = 16)
+axis(side = 1, at = year)
+axis(side = 2, at = c(5:10))
+lines(y = unemp_ts$lag_ur, x = unemp$year, type = 'b', lty = 2, pch = 16)
+legend(x = 1988, y = 10, c('UR', 'Lag_UR'), lty = c(1, 2), pch = 16, title = "Variable")
+box()
+```
+
+That was a lot of code, let's break it down. 
+```{r, eval = FALSE}
+plot(y = unemp_ts$ur, x = unemp$year, main = "Time Series Plot of UR, Lag(UR)", 
+     ylab = "Data", xlab = "Year", ylim = c(5,10), type = 'b', lty = 1, axes = FALSE, pch = 16)
+axis(side = 1, at = year)
+axis(side = 2, at = c(5:10))
+```
+This is almost the same as our first plot but we added a main title a line type (lty) and a plotting character (pch). Feel free to play around with these by changing the numbers. See google for some great cheat sheets on what these values look like. 
+
+```{r, eval = FALSE}
+lines(y = unemp_ts$lag_ur, x = unemp$year, type = 'b', lty = 2, pch = 16)
+```
+This adds our lagged line to the plot. We give it a different line type and plotting character to distinguish it. 
+
+```{r, eval = FALSE}
+legend(x = 1988, y = 10, c('UR', 'Lag_UR'), lty = c(1, 2), pch = 16, title = "Variable")
+box()
+```
+Our legend is positioned according to values on the axes by specifying the position of the top left corner. We then place the titles of our lines, the line types and the plotting characters for each. Finally we add a title to the legend. 
+
+## Error Calculations
+NOTE: The Minitab Guide renames the columns as this point. We will adjust to match. We also save these columns to new variables. This step is not necessary and we would normally avoid cluttering up the environment this way but it is consistent with the book. 
+```{r}
+names(unemp_ts) <- c("c1", "c2", "c3")
+c2 <- as.vector(unemp_ts$c2)
+c3 <- as.vector(unemp_ts$c3)
+```
+All math operators perform the same in R as they do in Minitab. Therefore, 
+MTB> let c4 = c2 - c3 is equivalent to
+R> c4 <- c2 - c3
+
+```{r}
+c4 <- c2 - c3
+k1 <- sum(c4 ** 2, na.rm = TRUE) / 9
+k2 <- sqrt(9 * k1 / 8) # In R, sqrt is faster computationally than ** .5
+c5 <- abs(c4)
+k3 <- sum(c5, na.rm = TRUE) / 9
+c6 <- c4 / c2
+k4 <- sum(c6, na.rm = TRUE) / 9 * 100
+c7 <- abs(c6)
+k5 <- sum(c7, na.rm = TRUE) / 9 * 100
+```
+
+```{r, echo = FALSE}
+print(c("MSE" = k1, "RSE"  = k2, "MAD" = k3, "MPE" =  k4, "MAPE" = k5))
+```
+
+We now have the error calcuations for the residual values. However, we can leverage the power of functions in R to make sure we don't have to write these formulas out each time. 
+
+```{r}
+fitted_errors <- function(obs, res) {
+  lenNoNa <- length(na.omit(res))
+  me <- sum(res, na.rm = TRUE) / lenNoNa
+  mse <- sum(res ** 2, na.rm = TRUE) / lenNoNa
+  rse <- sqrt(lenNoNa * mse / (lenNoNa - 1))
+  mad <- sum(abs(res), na.rm = TRUE) / lenNoNa
+  mpe <- sum(res / obs, na.rm = TRUE) / lenNoNa * 100
+  mapd <- sum(abs(res / obs), na.rm = TRUE) / lenNoNa * 100
+  print(c("ME" = me, "MSE" = mse, "RSE" = rse, "MAD" = mad, "MPE" = mpe, "MAPD" = mapd))
+}
+```
+
+Now we can use this function to calculate these fitted error terms any time we have residuals and observed values. 
+
+Try loading the AIRLINE.DAT file and computing the error values for a one period lag. To do this, you will first need to install the RCurl package available on CRAN by running:
+install.packages("Rcurl") 
+```{r}
+library(RCurl)
+URL <- getURL('https://raw.githubusercontent.com/wernersexton/DataFiles/master/AIRLINE.DAT', 
+              ssl.verifypeer = FALSE)
+airData <- read.table(textConnection(URL), nrows = 132, 
+                      col.names = "Airline", colClasses = 'numeric', 
+                      stringsAsFactors = FALSE, sep = ',')
+airData_ts <- zoo(airData, order.by = index(airData))
+airData_ts$Lag_Airline <- lag(airData_ts, -1)
+airResiduals <- airData_ts$Airline - airData_ts$Lag_Airline
+fitted_errors(obs = airData_ts$Airline, res = airResiduals)
+```
+
+Great, now lets take a look at the statistics from assuming a constant value. 
+```{r}
+airData2 <- read.table(textConnection(URL), skip = 132, nrows = 12, 
+                      col.names = "Airline", colClasses = 'numeric', 
+                      stringsAsFactors = FALSE, sep = ',')
+airData2$kAirline <- rep(405, 12)
+airResiduals2 <- airData2$Airline - airData2$kAirline
+fitted_errors(obs = airData2$Airline, res = airResiduals2)
+```
+
+## Descriptive Statistics
+```{r, echo = F}
+priceLevel <- matrix(c(.456, .474, .485, .517, .579, .623, .652, .687, .735, .807, .895, .967, 1.000, 1.021, 1.051, 1.070, 1.072, 1.076, 1.081), ncol = 1)
+priceLevel <- zoo(priceLevel)
+colnames(priceLevel) <- "Level"
+```
+
+To look at the descriptive statistics for a data set, the primary tool is the summary() function. 
+```{r}
+summary(priceLevel)
+```
+
+You can see that there may be a few things missing. You might want to know the standard error of the mean (SEMean) or the Standard Deviation (StDev). To get these, there are a couple simple commands. 
+```{r}
+# The standard deviation can be calculated as 
+sqrt(var(priceLevel))
+# or as 
+sd(priceLevel)
+# The Standard Error of the Mean is just the Standard Deviation / Square Root of n or:
+sqrt(var(priceLevel) / length(priceLevel))
+```
+
+NOTE: If your find yourself using the SEMean frequently, you could consider creating a function to calculate this. 
+
+## Nonparametrics
+
+### Runs Test
+The runs test is implemented in the tseries package. 
+
+```{r, message = FALSE}
+library(tseries)
+priceLevel_norm <- factor(sign(priceLevel - .8071))
+runs.test(priceLevel_norm)
+```
+
+Here, we run into a differnce between Minitab and R. First, if you follow the example in the Minitab guide and look for runs above and below .807, you find that the test fails. To complete the runs test, there needs to be only two possibilities. Either, 1 which indicates data is above your given value or -1 indicating below it. However, with .807, you have three values -1, 0, 1. Minitab makes an automatic assumption to make the test work, however, it may not be what you intended. R is not so nice but makes sure you understand what you are asking for and what you are getting in return. 
+
+### Sign Test for Median
+TODO
+### Daniels Test
+TODO
+
+## Autocorrelation
+Take a look at the Autocorrelation output in the Minitab guide. It will give you a good sense of what you are looking for when looking at an ACF plot. 
+
+To accomplish this in R, you will be using the acf() and pacf() functions. 
+```{r, echo = FALSE}
+priceLevel$Lag_Level <- lag(priceLevel$Level, -1)
+```
+```{r}
+priceLevel_acf <- acf(priceLevel$Level, lag.max = 4) 
+priceLevel_acf
+```
+
+That is the normal ACF output. But it does not match Minitab. For one, the confidence interval calculation is different and you dont get the Ljung-Box statistics. To get match the output of Minitab, follow these steps:
+```{r}
+priceLevel_acf <- acf(priceLevel$Level, lag.max = 4, ci.type = 'ma') 
+Box.test(priceLevel$Level, lag = 1, type = 'Ljung-Box')
+```
+
+You can see the R documentation here:
+http://stat.ethz.ch/R-manual/R-patched/library/stats/html/plot.acf.html
+for an explanation of the ci.type and its inputs. 
+
+Correlations(Pearson)
+```{r}
+cor(x = priceLevel$Level, y = priceLevel$Lag_Level, method = "pearson", use = "complete.obs")
+# Because the first value of the Lag_Level is NA you must specify what data to use by the "use = " command. 
+```
+
+# Components of a Time Series
+```{r}
+URL <- getURL('https://raw.githubusercontent.com/wernersexton/DataFiles/master/LUMBER.DAT', ssl.verifypeer = FALSE)
+data <- read.table(textConnection(URL), nrows = 120, col.names = c("YRMO", "Sales"))
+data_ts <- ts(data, start = c(1980, 1), frequency = 12)
+plot(data_ts[,2], type = 'o', main = "Time Series Plot of C2", ylab = "C2", xlab = "")
+```
+
+This time, we have a data set with no date column. The "ts" function works well here. We used the start = (1980, 1) to indicate we are starting at the first part of the frequency in 1980, then we specified the freqency = 12 to make this a monthly timeseries. 
+
+
+For much of the time series and decomposition processes, there are fantastic packages available from Rob Hyndman. I would also recommend you check out his blog 
+
+http://robjhyndman.com/hyndsight/
+
+Our work will mainly focus on the forecast package. Let's go ahead and install that now.  
+
+install.packages("forecast")
+
+## Moving Averages
+```{r}
+URL <- getURL('https://raw.githubusercontent.com/wernersexton/DataFiles/master/IBMMN.DAT', ssl.verifypeer = FALSE)
+stock <- ts(read.table(textConnection(URL), nrows = 151, col.names = c("Date", "Volume", "High", "Low", "Close")))
+```
+
+If you take a look carefully at the Moving Average example here, you will notice that there isn't an average here. Instead, we are again looking at a lagged version of our time series. The IBM example can be done using only the tools we have previously learned. We will run through this rather quickly.
+
+```{r}
+fits <- lag(stock[,5], -1)
+residuals <- stock[,5] - fits
+plot(stock[,5], type = 'o')
+lines(fits, lty = 2)
+fitted_errors(obs = stock[,5], res = residuals)
+acf(stock[,5], ci.type = 'ma', lag.max = 35) # Random Walk
+acf(residuals, lag.max = 35) # Random
+```
+
